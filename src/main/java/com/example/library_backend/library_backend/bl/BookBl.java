@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.naming.ServiceUnavailableException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -33,19 +35,32 @@ public class BookBl {
                 return Optional.of(books.stream().map(this::mapToBookDto).collect(Collectors.toList()));
             }
             return Optional.of(Collections.emptyList());
+        } catch (DataAccessException e) {
+            ErrorLogger.logError("Book BL: Data access exception while retrieving books", e);
+        } catch (QueryTimeoutException e) {
+            ErrorLogger.logError("Book BL: Query timeout exception while retrieving books", e);
         } catch (Exception e) {
-            // TODO: handle exception
+            ErrorLogger.logError("Book BL: Exception while retrieving books", e);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<BookDto> findBookById(String id){
+        try {
+            return bookDao.findById(id).map(this::mapToBookDto);
+        } catch (DataAccessException e) {
+            ErrorLogger.logError("Book BL: Data access exception while retrieving books", e);
+        } catch (QueryTimeoutException e) {
+            ErrorLogger.logError("Book BL: Query timeout exception while retrieving books", e);
+        } catch (Exception e) {
+            ErrorLogger.logError("Book BL: Exception while retrieving books", e);
         }
         return Optional.empty();
     }
 
     public Optional<BookDto> findBookByTitle(String title){
         try {
-            if(!bookDao.existsByTitle(title)){
-                Exception e = new IllegalArgumentException();
-                ErrorLogger.logError("No book found", e);
-            }
-            return Optional.of(mapToBookDto(bookDao.findByTitle(title)));
+            return bookDao.findByTitle(title).map(this::mapToBookDto);
         } catch (DataAccessException e) {
             ErrorLogger.logError("Book BL: Data access exception while retrieving book", e);
         } catch (QueryTimeoutException e) {
